@@ -25,10 +25,12 @@ intellibus.db
 .env.local
 .env.*.local
 
-# Generated / Binary Documentation (Keep *.md and frontend/index.html)
+# Generated / Binary Documentation & Build Tools
 *.doc
 *.docx
 IntelliBus_AI_Project_Documentation.html
+generate_docs.py
+SKILL.md
 
 # Local Script Helpers
 *.bat
