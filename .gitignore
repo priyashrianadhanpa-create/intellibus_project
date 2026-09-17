@@ -1,5 +1,11 @@
-# Dependencies
+# Dependencies & Package Locks
 node_modules/
+package-lock.json
+uv.lock
+yarn.lock
+pnpm-lock.yaml
+
+# Virtual Environments
 .venv/
 venv/
 env/
@@ -11,13 +17,22 @@ __pycache__/
 *$py.class
 .pytest_cache/
 
-# Database & Environment
+# Database & Environment Secrets
 *.db
 intellibus.db
 .env
 .env.production
 .env.local
 .env.*.local
+
+# Generated / Binary Documentation (Keep *.md and frontend/index.html)
+*.doc
+*.docx
+IntelliBus_AI_Project_Documentation.html
+
+# Local Script Helpers
+*.bat
+*.ps1
 
 # Build outputs & caches
 dist/
