@@ -35,6 +35,7 @@ SKILL.md
 # Local Script Helpers
 *.bat
 *.ps1
+!start.bat
 
 # Build outputs & caches
 dist/
