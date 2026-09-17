@@ -1,0 +1,287 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset="utf-8">
+  <title>IntelliBus AI Platform Technical Documentation</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    body {
+      font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+      margin: 40px;
+      color: #334155;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #1e3a8a;
+      font-size: 26pt;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      color: #2563eb;
+      font-size: 14pt;
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+    h2 {
+      color: #1e3a8a;
+      font-size: 16pt;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 5px;
+      margin-top: 25px;
+    }
+    h3 {
+      color: #0f172a;
+      font-size: 13pt;
+      margin-top: 15px;
+    }
+    .flowchart-box {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', Consolas, monospace;
+      font-size: 9.5pt;
+      white-space: pre;
+      line-height: 1.3;
+      margin: 20px 0;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      padding: 10px;
+      text-align: left;
+      font-size: 10pt;
+    }
+    td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      font-size: 10pt;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .code-block {
+      background-color: #f1f5f9;
+      border-left: 4px solid #2563eb;
+      padding: 12px;
+      font-family: Consolas, monospace;
+      font-size: 10pt;
+      margin: 10px 0;
+      color: #0f172a;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 8.5pt;
+    }
+    .badge-green { background-color: #dcfce7; color: #15803d; }
+    .badge-blue { background-color: #dbeafe; color: #1e40af; }
+    .security-card {
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>INTELLIBUS AI PLATFORM</h1>
+  <div class="subtitle">Complete Technical Documentation, Architecture Flowchart & Operational Guide</div>
+
+  <h2>1. Executive Project Summary</h2>
+  <p>
+    <strong>IntelliBus AI</strong> is an enterprise-grade campus transportation intelligence platform designed for universities, corporate shuttle networks, and transit fleets. 
+    The platform provides real-time vehicle location tracking over WebSockets, AI-powered arrival countdowns (ETA), Dijkstra shortest-path route optimization, 
+    driver safety anomaly detection, automated 50-meter stop geofencing, digital QR boarding validation, and role-based operational dashboards.
+  </p>
+
+  <h2>2. System Architecture & Flowchart</h2>
+  <p>
+    The system architecture follows an asynchronous, event-driven reactive micro-services data flow. Telemetry originating from driver hardware GPS devices or simulated campus fleet buses streams directly over low-latency WebSockets to FastAPI backend handlers, which process proximity geofencing, update machine learning models, and broadcast coordinate updates to listening frontend Leaflet maps.
+  </p>
+
+  <div class="flowchart-box">
++---------------------------------------------------------------------------------------------------+
+|                                  INTELLIBUS AI SYSTEM ARCHITECTURE                                |
++---------------------------------------------------------------------------------------------------+
+                                                  |
+           +--------------------------------------+--------------------------------------+
+           |                                                                             |
+ [Driver Mobile Phone GPS]                                                     [Telemetry Simulator]
+ (HTML5 Geolocation API)                                                       (ml/telemetry_simulator.py)
+           |                                                                             |
+           +--------------------------------------+--------------------------------------+
+                                                  |
+                                        WebSocket Connection
+                                    /ws/live-location/{trip_id}
+                                                  |
+                                                  v
+                                +-----------------------------------+
+                                | FastAPI Telemetry Broker          |
+                                | (ConnectionManager & Broadcast)   |
+                                +-----------------------------------+
+                                                  |
+           +--------------------------------------+--------------------------------------+
+           |                                      |                                      |
+           v                                      v                                      v
+  [Geofence Engine]                     [Machine Learning Engine]                 [PostgreSQL DB]
+ (50m Proximity Check)                  - ETA Predictor (Haversine)               - Users, Buses
+ (backend/app/geofence.py)              - Route Optimizer (Dijkstra)              - Routes, Trips
+                                        - Driver Safety Auditor                   - GPS Logs, Alerts
+           |                                      |                                      |
+           +--------------------------------------+--------------------------------------+
+                                                  |
+                                                  v
+                                +-----------------------------------+
+                                | React 19 Frontend User Dashboards |
+                                | - Student (Map, ETA, AI Voice, QR)|
+                                | - Driver (Console, GPS Broadcaster|
+                                | - Staff (Fleet Ops, Analytics)    |
+                                | - Admin (Fleet Config, Users, PWA)|
+                                +-----------------------------------+
+  </div>
+
+  <h2>3. How to Run the Project (Step-by-Step)</h2>
+  <p>
+    The repository includes dedicated launcher scripts to start the FastAPI backend and React Vite frontend simultaneously.
+  </p>
+
+  <h3>One-Click Launch Commands:</h3>
+  <div class="code-block">
+    <strong>Windows Command Prompt (Root Directory):</strong><br>
+    .\start.bat<br><br>
+    <strong>Windows PowerShell (Root Directory):</strong><br>
+    .\start.ps1
+  </div>
+
+  <h3>System Ports & Endpoints:</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Service Component</th>
+        <th>URL / Endpoint</th>
+        <th>Status / Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Frontend Application</strong></td>
+        <td>http://localhost:5173</td>
+        <td><span class="badge badge-green">ACTIVE</span> React 19 + Vite App</td>
+      </tr>
+      <tr>
+        <td><strong>Backend API Docs</strong></td>
+        <td>http://localhost:8000/api/v1/openapi.json</td>
+        <td><span class="badge badge-blue">ACTIVE</span> Swagger / OpenAPI Docs</td>
+      </tr>
+      <tr>
+        <td><strong>WebSocket Telemetry</strong></td>
+        <td>ws://localhost:8000/ws/live-location/{trip_id}</td>
+        <td><span class="badge badge-green">STREAMING</span> Sub-second Location Stream</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Default Demo Login Credentials:</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>User Role</th>
+        <th>Email Address</th>
+        <th>Password</th>
+        <th>Permissions & Capabilities</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Student</strong></td>
+        <td>student@campus.edu</td>
+        <td>password123</td>
+        <td>Live Map, AI ETA, QR Boarding Pass, AI Journey Planner, Voice Assistant</td>
+      </tr>
+      <tr>
+        <td><strong>Driver</strong></td>
+        <td>driver@campus.edu</td>
+        <td>password123</td>
+        <td>Trip Control, Mobile Hardware GPS Broadcaster, Passenger Counter, Delay Logger</td>
+      </tr>
+      <tr>
+        <td><strong>Staff / Dispatcher</strong></td>
+        <td>staff@campus.edu</td>
+        <td>password123</td>
+        <td>Fleet Operations, Multi-Bus Map, Peak Passenger Analytics, Dispatch Alerts</td>
+      </tr>
+      <tr>
+        <td><strong>Administrator</strong></td>
+        <td>admin@campus.edu</td>
+        <td>password123</td>
+        <td>Fleet Roster, Route Manager, User Directory, Database Seeder, AI Control</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4. Security Architecture & Compliance Report</h2>
+  <div class="security-card">
+    <h3>Security Measures Implemented:</h3>
+    <ul>
+      <li><strong>Authentication Standard:</strong> OAuth2 JSON Web Token (JWT) using HS256 signature algorithm and 7-day expiration windows.</li>
+      <li><strong>Cryptographic Hashing:</strong> Passwords hashed using PBKDF2-HMAC-SHA256 with 100,000 iterations and dedicated salt key (resistant to rainbow table attacks).</li>
+      <li><strong>Role-Based Access Control (RBAC):</strong> Enforced at both FastAPI dependency levels (backend) and React Router protected route wrappers (frontend).</li>
+      <li><strong>CORS & Origin Security:</strong> Configured middleware headers preventing cross-site scripting (XSS) and request forgery.</li>
+      <li><strong>Input Validation:</strong> Strict Pydantic model validation on all incoming payload bodies.</li>
+    </ul>
+  </div>
+
+  <h2>5. Core Technology Stack Summary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>Technologies Used</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Backend API</strong></td>
+        <td>FastAPI, Uvicorn, Python 3.12, Pydantic v2, WebSockets</td>
+      </tr>
+      <tr>
+        <td><strong>Database & ORM</strong></td>
+        <td>PostgreSQL 15, PostGIS 3.3, SQLAlchemy 2.0, Alembic</td>
+      </tr>
+      <tr>
+        <td><strong>Machine Learning Core</strong></td>
+        <td>Custom Python Models: Haversine ETA Predictor, Dijkstra Route Optimizer, Safety Anomaly Detector</td>
+      </tr>
+      <tr>
+        <td><strong>Frontend Framework</strong></td>
+        <td>React 19, Vite, TypeScript, React Router v7, Zustand, Tailwind CSS v4, Lucide Icons</td>
+      </tr>
+      <tr>
+        <td><strong>Maps & PWA</strong></td>
+        <td>Leaflet, React-Leaflet, Web Speech API, Service Workers (PWA)</td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+</html>

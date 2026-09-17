@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+ENV/
+
+# Python & Pytest
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Database & Environment
+*.db
+intellibus.db
+.env
+.env.production
+.env.local
+.env.*.local
+
+# Build outputs & caches
+dist/
+build/
+.expo/
+.next/
+*.log
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
