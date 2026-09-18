@@ -290,15 +290,15 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner - White Theme */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="flex items-center space-x-2 text-blue-200 text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="flex items-center space-x-2 text-blue-200 text-xs font-semibold mb-1">
             <ShieldCheck size={16} className="text-emerald-400" />
-            <span>IFET COLLEGE OF ENGINEERING • CAMPUS TRANSIT SYSTEM</span>
+            <span>IFET COLLEGE OF ENGINEERING • BUS TRACKER</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Student Transportation Hub</h1>
-          <p className="text-blue-100 text-xs sm:text-sm mt-1">Real-time GPS telemetry, personalized ETAs, and multi-corridor transit management.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Student Bus Dashboard</h1>
+          <p className="text-blue-100 text-xs sm:text-sm mt-1">Live bus location, arrival countdowns, and boarding stop alerts.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

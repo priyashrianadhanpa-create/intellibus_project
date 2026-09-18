@@ -79,15 +79,15 @@ export function StaffDashboard() {
 
   return (
     <div className="space-y-6 select-none font-sans">
-      {/* Top Banner - White Theme */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="space-y-1">
-          <div className="flex items-center space-x-2 text-blue-200 font-mono text-xs uppercase tracking-wider font-bold">
+          <div className="flex items-center space-x-2 text-blue-200 text-xs font-semibold">
             <ShieldCheck size={16} className="text-emerald-400" />
-            <span>OPERATIONS CONTROL • IFET CAMPUS TRANSIT AUTHORITY</span>
+            <span>IFET COLLEGE TRANSPORTATION • DISPATCH CONSOLE</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-display tracking-tight">Campus Transit Operations Console</h1>
-          <p className="text-blue-100 text-xs sm:text-sm">Real-time fleet monitoring, PostGIS geofence alerts, and IoT OBD-II telemetry diagnostics.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Fleet Operations Console</h1>
+          <p className="text-blue-100 text-xs sm:text-sm">Real-time bus tracking, route schedules, and driver telemetry.</p>
         </div>
 
         <button
@@ -98,9 +98,9 @@ export function StaffDashboard() {
               toast.warning("Broadcast Notice Active", notice)
             }
           }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-mono font-black rounded-xl shadow-md transition-all text-xs"
+          className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-sm transition-colors text-xs"
         >
-          <AlertTriangle size={15} /> Broadcast Dispatch Notice
+          <AlertTriangle size={15} /> Post Campus Broadcast
         </button>
       </div>
 
