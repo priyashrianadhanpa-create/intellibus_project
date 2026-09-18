@@ -41,9 +41,8 @@ export function StaffDashboard() {
   useEffect(() => {
     async function loadTrafficData() {
       try {
-        const res = await fetch('http://localhost:8000/api/v1/ai/traffic-heatmap')
-        if (res.ok) {
-          const data = await res.json()
+        const data = await api.getTrafficHeatmap()
+        if (data && data.heatmap) {
           setTrafficHeatmap(data.heatmap.slice(7, 19))
         }
       } catch (err) {

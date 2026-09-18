@@ -1,11 +1,14 @@
 import { useAuthStore } from '../store/authStore'
 
+const ENV_API_URL = import.meta.env.VITE_API_BASE_URL
+const ENV_WS_URL = import.meta.env.VITE_WS_URL
+
 const HOSTNAME = typeof window !== 'undefined' ? window.location.hostname : 'localhost'
 const IS_HTTPS = typeof window !== 'undefined' && window.location.protocol === 'https:'
-const API_BASE_URL = IS_HTTPS ? '/api/v1' : `http://${HOSTNAME}:8000/api/v1`
-const WS_BASE_URL = IS_HTTPS 
+const API_BASE_URL = ENV_API_URL || (IS_HTTPS ? '/api/v1' : `http://${HOSTNAME}:8000/api/v1`)
+const WS_BASE_URL = ENV_WS_URL || (IS_HTTPS 
   ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${typeof window !== 'undefined' ? window.location.host : 'localhost:5173'}/ws`
-  : `ws://${HOSTNAME}:8000/ws`
+  : `ws://${HOSTNAME}:8000/ws`)
 
 export interface User {
   id: number
@@ -162,6 +165,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ origin_stop_id: originStopId, dest_stop_id: destStopId }),
     })
+  },
+  getTrafficHeatmap: async () => {
+    return request<{ heatmap: Array<{ hour: number; label: string; traffic_factor: number; congestion_level: string; estimated_delay_mins: number }> }>('/ai/traffic-heatmap')
   },
 
   // Alerts
