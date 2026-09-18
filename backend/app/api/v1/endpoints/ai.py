@@ -4,18 +4,16 @@ from typing import Optional, List
 import sys
 import os
 
-# Add workspace root to sys.path to import ml package
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-parent_root = os.path.abspath(os.path.join(project_root, ".."))
-if parent_root not in sys.path:
-    sys.path.insert(0, parent_root)
-
-from ml.eta_model import predictor
-from ml.route_optimizer import optimizer
-from ml.safety_detector import safety_detector
-from ml.traffic_model import traffic_model
+try:
+    from app.ml.eta_model import predictor
+    from app.ml.route_optimizer import optimizer
+    from app.ml.safety_detector import safety_detector
+    from app.ml.traffic_model import traffic_model
+except ImportError:
+    from ml.eta_model import predictor
+    from ml.route_optimizer import optimizer
+    from ml.safety_detector import safety_detector
+    from ml.traffic_model import traffic_model
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
