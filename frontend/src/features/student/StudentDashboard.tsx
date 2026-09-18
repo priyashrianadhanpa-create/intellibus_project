@@ -291,14 +291,14 @@ export function StudentDashboard() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-xl p-6 text-white shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-gradient-to-r from-[#121422] via-[#181a2b] to-[#0c0d16] border border-[#222538] rounded-3xl p-6 text-white shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="flex items-center space-x-2 text-blue-200 text-xs font-semibold mb-1">
+          <div className="flex items-center space-x-2 text-indigo-300 text-xs font-semibold mb-1">
             <ShieldCheck size={16} className="text-emerald-400" />
             <span>IFET COLLEGE OF ENGINEERING • BUS TRACKER</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Student Bus Dashboard</h1>
-          <p className="text-blue-100 text-xs sm:text-sm mt-1">Live bus location, arrival countdowns, and boarding stop alerts.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Student Bus Dashboard</h1>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">Live bus location, arrival countdowns, and boarding stop alerts.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -306,10 +306,10 @@ export function StudentDashboard() {
           <select
             value={selectedRouteId}
             onChange={(e) => setSelectedRouteId(Number(e.target.value))}
-            className="bg-white/15 backdrop-blur-md text-white border border-white/30 rounded-xl px-4 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white"
+            className="bg-[#181a24] text-white border border-[#2a2e45] rounded-full px-4 py-2.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white"
           >
             {COLLEGE_ROUTES.map(r => (
-              <option key={r.id} value={r.id} className="text-slate-900 font-semibold">
+              <option key={r.id} value={r.id} className="bg-[#12131a] text-white font-semibold">
                 {r.name}
               </option>
             ))}
@@ -317,10 +317,10 @@ export function StudentDashboard() {
 
           <button
             onClick={() => setIsAlertModalOpen(true)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold transition-all shadow-md ${
               isAlertActive 
-                ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
-                : 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border border-white/20'
+                ? 'bg-white text-black hover:bg-slate-200' 
+                : 'bg-[#181a24] hover:bg-[#222538] text-white border border-[#2a2e45]'
             }`}
           >
             <BellRing size={15} />
