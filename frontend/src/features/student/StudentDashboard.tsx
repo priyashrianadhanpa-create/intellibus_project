@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useAuthStore } from '../../store/authStore'
 import { LiveTrackingMap } from '../../components/maps/LiveTrackingMap'
 import { LiveRouteFlowchart } from '../../components/maps/LiveRouteFlowchart'
 import { AIVoiceAssistant } from '../../components/ai/AIVoiceAssistant'
@@ -97,21 +98,24 @@ export function StudentDashboard() {
     }
   }, [selectedRouteId, activeStops])
 
-  // Fetch student saved stop from backend API on mount
+  // Fetch student saved stop from backend API on mount (only when authenticated)
+  const token = useAuthStore(state => state.token)
   useEffect(() => {
+    if (!token) return  // Skip API call — no JWT token yet, avoids 401
     let mounted = true
     api.getStudentStop()
       .then(res => {
-        if (mounted && res.stop) {
-          setSavedStop(res.stop)
-          localStorage.setItem('intellibus_saved_student_stop', JSON.stringify(res.stop))
+        // Backend returns the stop object directly (not wrapped under res.stop)
+        if (mounted && res && res.latitude) {
+          setSavedStop(res)
+          localStorage.setItem('intellibus_saved_student_stop', JSON.stringify(res))
         }
       })
       .catch(() => {
-        // Silently retain localStorage stop
+        // Silently retain localStorage/default stop on any network/auth error
       })
     return () => { mounted = false }
-  }, [])
+  }, [token])
 
   // Poll driver live location via WebSocket / HTTP polling fallback
   useEffect(() => {
