@@ -135,7 +135,7 @@ export function LoginPage() {
                 <Bus size={28} />
               </div>
             </div>
-            <h2 className="text-2xl font-extrabold text-white tracking-tight">Sign in to Platform</h2>
+            <h2 className="text-2xl font-extrabold text-white tracking-tight">Launch IFET IntelliBus</h2>
             <p className="text-xs text-slate-400">Select a quick demo role or enter your login credentials</p>
           </div>
 
@@ -215,7 +215,7 @@ export function LoginPage() {
               disabled={isLoading}
               className="w-full py-3.5 px-6 rounded-full text-sm font-black text-black bg-white hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50 transition-all shadow-lg shadow-white/10 flex items-center justify-center gap-2 mt-4"
             >
-              {isLoading ? 'Signing in...' : 'SIGN IN TO PLATFORM'} <ArrowRight size={16} />
+              {isLoading ? 'Signing in...' : 'LAUNCH IFET INTELLIBUS'} <ArrowRight size={16} />
             </button>
           </form>
         </div>
