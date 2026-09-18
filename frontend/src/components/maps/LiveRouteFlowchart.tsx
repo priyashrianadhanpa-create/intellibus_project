@@ -113,23 +113,30 @@ export function LiveRouteFlowchart({
   }, [busLocation, displayStops])
 
   return (
-    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 text-white rounded-3xl p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.6)] border border-slate-800/80 space-y-5 antialiased backdrop-blur-md">
-      {/* Top Header - Glassmorphic Premium Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-4">
+    /* Website palette: canvas #090a0f, surface #12131a/#181a24, border #222536, accent indigo-400/#818cf8 */
+    <div className="text-white rounded-3xl p-5 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.7)] border border-[#222536] space-y-5 antialiased backdrop-blur-md"
+      style={{ background: 'linear-gradient(135deg, #0d0e17 0%, #12131a 60%, #14152080 100%)' }}
+    >
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#222536] pb-4">
         <div className="flex items-center space-x-3.5">
-          <div className="p-3 bg-gradient-to-br from-blue-500 via-indigo-600 to-violet-600 rounded-2xl shadow-xl shadow-blue-500/25 border border-blue-400/30 flex items-center justify-center">
+          {/* Bus icon badge — indigo/violet site accent */}
+          <div className="p-3 rounded-2xl shadow-xl border border-indigo-500/30 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', boxShadow: '0 8px 24px rgba(129,140,248,0.25)' }}
+          >
             <Bus className="text-white" size={24} />
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h3 className="font-black text-lg sm:text-xl text-white tracking-wide">{busLabel}</h3>
-              <span className="px-3 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black rounded-full flex items-center gap-1.5 shadow-xs">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              {/* LIVE badge — use site indigo instead of emerald */}
+              <span className="px-3 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-black rounded-full flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
                 LIVE STREAMING
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1 flex items-center gap-2 font-medium">
-              <span>Bus near <strong className="text-cyan-300 font-extrabold">{progressInfo.nearestStopName}</strong></span>
+              <span>Bus near <strong className="text-indigo-300 font-extrabold">{progressInfo.nearestStopName}</strong></span>
               <span>•</span>
               <span className="text-slate-300 font-mono font-bold">{busLocation.speed.toFixed(0)} km/h</span>
             </p>
@@ -138,14 +145,19 @@ export function LiveRouteFlowchart({
 
         {/* View Mode Controls */}
         <div className="flex items-center gap-2 self-stretch sm:self-auto justify-between sm:justify-end">
-          <div className="bg-slate-900/90 p-1 rounded-2xl border border-slate-800 flex items-center text-xs font-bold shadow-inner">
+          <div className="p-1 rounded-2xl border border-[#222536] flex items-center text-xs font-bold shadow-inner"
+            style={{ background: '#181a24' }}
+          >
             <button
               onClick={() => setViewOrientation('vertical')}
               className={`px-3.5 py-1.5 rounded-xl transition-all ${
                 viewOrientation === 'vertical'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-md shadow-blue-500/20'
+                  ? 'text-white font-black shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
+              style={viewOrientation === 'vertical'
+                ? { background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', boxShadow: '0 4px 12px rgba(129,140,248,0.2)' }
+                : {}}
             >
               Vertical
             </button>
@@ -153,9 +165,12 @@ export function LiveRouteFlowchart({
               onClick={() => setViewOrientation('horizontal')}
               className={`px-3.5 py-1.5 rounded-xl transition-all ${
                 viewOrientation === 'horizontal'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-md shadow-blue-500/20'
+                  ? 'text-white font-black shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
+              style={viewOrientation === 'horizontal'
+                ? { background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', boxShadow: '0 4px 12px rgba(129,140,248,0.2)' }
+                : {}}
             >
               Horizontal
             </button>
@@ -164,56 +179,70 @@ export function LiveRouteFlowchart({
           {showMapToggle && onToggleMapView && (
             <button
               onClick={onToggleMapView}
-              className="px-4 py-2 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-xs hover:border-blue-500/50"
+              className="px-4 py-2 hover:bg-[#1e2030] text-slate-200 border border-[#2e334d] rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 hover:border-indigo-500/50"
+              style={{ background: '#181a24' }}
             >
-              <Navigation size={14} className="text-cyan-400" /> Switch to Map
+              <Navigation size={14} className="text-indigo-400" /> Switch to Map
             </button>
           )}
         </div>
       </div>
 
-      {/* Premium Telemetry Quick Strip */}
+      {/* Telemetry Quick Strip — unified to site palette */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <div className="bg-slate-900/80 border border-slate-800/90 p-3.5 rounded-2xl flex items-center space-x-3 shadow-inner hover:border-emerald-500/30 transition-all">
-          <div className="p-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/20">
+        {/* Speed — indigo accent (was emerald) */}
+        <div className="border border-[#222536] p-3.5 rounded-2xl flex items-center space-x-3 shadow-inner hover:border-indigo-500/30 transition-all"
+          style={{ background: '#181a24' }}
+        >
+          <div className="p-2.5 rounded-xl border border-indigo-500/20" style={{ background: 'rgba(129,140,248,0.1)', color: '#818cf8' }}>
             <Zap size={18} />
           </div>
           <div>
             <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Speed</div>
-            <div className="text-base font-black text-emerald-400">{busLocation.speed.toFixed(0)} km/h</div>
+            <div className="text-base font-black" style={{ color: '#818cf8' }}>{busLocation.speed.toFixed(0)} km/h</div>
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800/90 p-3.5 rounded-2xl flex items-center space-x-3 shadow-inner hover:border-amber-500/30 transition-all">
-          <div className="p-2.5 bg-amber-500/15 text-amber-400 rounded-xl border border-amber-500/20">
+        {/* ETA — violet accent (was amber) */}
+        <div className="border border-[#222536] p-3.5 rounded-2xl flex items-center space-x-3 shadow-inner hover:border-violet-500/30 transition-all"
+          style={{ background: '#181a24' }}
+        >
+          <div className="p-2.5 rounded-xl border border-violet-500/20" style={{ background: 'rgba(167,139,250,0.1)', color: '#a78bfa' }}>
             <Clock size={18} />
           </div>
           <div>
             <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Campus Arrival</div>
-            <div className="text-base font-black text-amber-300">~{progressInfo.totalEtaMins} mins</div>
+            <div className="text-base font-black" style={{ color: '#a78bfa' }}>~{progressInfo.totalEtaMins} mins</div>
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800/90 p-3.5 rounded-2xl flex items-center space-x-3 col-span-2 sm:col-span-1 shadow-inner hover:border-indigo-500/30 transition-all">
-          <div className="p-2.5 bg-indigo-500/15 text-indigo-400 rounded-xl border border-indigo-500/20">
+        {/* Destination — blue accent (was indigo, already close) */}
+        <div className="border border-[#222536] p-3.5 rounded-2xl flex items-center space-x-3 col-span-2 sm:col-span-1 shadow-inner hover:border-blue-500/30 transition-all"
+          style={{ background: '#181a24' }}
+        >
+          <div className="p-2.5 rounded-xl border border-blue-500/20" style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa' }}>
             <School size={18} />
           </div>
           <div className="truncate">
             <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Destination</div>
-            <div className="text-xs font-black text-indigo-300 truncate">{destinationName}</div>
+            <div className="text-xs font-black text-blue-300 truncate">{destinationName}</div>
           </div>
         </div>
       </div>
 
-      {/* ULTRA-PREMIUM VERTICAL ROUTE TIMELINE */}
+      {/* VERTICAL ROUTE TIMELINE */}
       {viewOrientation === 'vertical' ? (
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-5 sm:p-6 shadow-inner">
+        <div className="border border-[#222536] rounded-3xl p-5 sm:p-6 shadow-inner" style={{ background: 'rgba(18,19,26,0.5)' }}>
           <div className="relative pl-8 sm:pl-10 space-y-5">
-            {/* Glowing Metro Line */}
-            <div className="absolute left-[20px] sm:left-[24px] top-4 bottom-4 w-1.5 bg-slate-800/90 rounded-full overflow-hidden shadow-inner">
+            {/* Progress track line — indigo/violet gradient (was emerald/cyan/amber) */}
+            <div className="absolute left-[20px] sm:left-[24px] top-4 bottom-4 w-1.5 rounded-full overflow-hidden shadow-inner" style={{ background: '#222536' }}>
               <div
-                className="w-full bg-gradient-to-b from-emerald-400 via-cyan-400 to-amber-400 transition-all duration-700 shadow-[0_0_12px_rgba(52,211,153,0.5)]"
-                style={{ height: `${progressInfo.progressPct}%` }}
+                className="w-full transition-all duration-700"
+                style={{
+                  height: `${progressInfo.progressPct}%`,
+                  background: 'linear-gradient(to bottom, #4f46e5, #818cf8, #a78bfa)',
+                  boxShadow: '0 0 12px rgba(129,140,248,0.4)'
+                }}
               />
             </div>
 
@@ -226,46 +255,56 @@ export function LiveRouteFlowchart({
               const stopRemDist = calculateDistanceKm(busLocation.lat, busLocation.lng, stop.lat, stop.lng)
               const stopEtaMins = Math.max(0, Math.round((stopRemDist / Math.max(busLocation.speed, 20)) * 60))
 
+              // Node styles using website palette
+              const nodeStyle: React.CSSProperties = isStudentStop
+                ? { background: 'linear-gradient(135deg, #4f46e5 0%, #a78bfa 100%)', boxShadow: '0 0 16px rgba(167,139,250,0.35)' }
+                : isDestination
+                ? { background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)', boxShadow: '0 0 16px rgba(99,102,241,0.3)' }
+                : isCurrentNode
+                ? { background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', boxShadow: '0 0 20px rgba(129,140,248,0.5)' }
+                : isPassed
+                ? { background: 'linear-gradient(135deg, #312e81 0%, #4338ca 100%)', border: '1px solid rgba(129,140,248,0.2)' }
+                : { background: '#1e2030', border: '1px solid #2e334d' }
+
+              const nodeRingClass = isStudentStop
+                ? 'ring-4 ring-violet-400/30 scale-110'
+                : isCurrentNode
+                ? 'ring-4 ring-indigo-400/40 scale-110 animate-pulse'
+                : ''
+
+              // Card styles
+              const cardStyle: React.CSSProperties = isStudentStop
+                ? { background: 'linear-gradient(135deg, rgba(79,70,229,0.15) 0%, rgba(18,19,26,0.95) 100%)', border: '1px solid rgba(129,140,248,0.5)' }
+                : isCurrentNode
+                ? { background: 'linear-gradient(135deg, rgba(79,70,229,0.2) 0%, rgba(18,19,26,0.98) 100%)', border: '1px solid rgba(129,140,248,0.6)' }
+                : isPassed
+                ? { background: 'rgba(18,19,26,0.3)', border: '1px solid #1a1c2a' }
+                : { background: 'rgba(18,19,26,0.75)', border: '1px solid #222536' }
+
               return (
                 <div key={stop.id || idx} className="relative flex items-center space-x-4 group">
                   {/* Circle Node Badge */}
                   <div
-                    className={`absolute -left-[38px] sm:-left-[42px] w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 shadow-xl ${
-                      isStudentStop
-                        ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 ring-4 ring-amber-400/30 scale-110 shadow-amber-500/20'
-                        : isDestination
-                        ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white ring-4 ring-purple-500/30 shadow-purple-500/20'
-                        : isCurrentNode
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ring-4 ring-blue-500/40 scale-110 animate-pulse shadow-blue-500/40'
-                        : isPassed
-                        ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white border border-emerald-400/30'
-                        : 'bg-slate-800 text-slate-400 border border-slate-700/80'
-                    }`}
+                    className={`absolute -left-[38px] sm:-left-[42px] w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 shadow-xl text-white ${nodeRingClass}`}
+                    style={nodeStyle}
                   >
                     {isStudentStop ? (
-                      <Home size={15} className="text-slate-950 font-black" />
+                      <Home size={15} className="text-white font-black" />
                     ) : isDestination ? (
-                      <School size={15} className="text-amber-300" />
+                      <School size={15} className="text-blue-200" />
                     ) : isPassed ? (
                       <CheckCircle2 size={15} />
                     ) : isCurrentNode ? (
                       <Radio size={15} className="animate-spin text-white" />
                     ) : (
-                      <span className="text-xs font-extrabold">{idx + 1}</span>
+                      <span className="text-xs font-extrabold text-slate-400">{idx + 1}</span>
                     )}
                   </div>
 
-                  {/* Glassmorphic Stop Card */}
+                  {/* Stop Card */}
                   <div
-                    className={`flex-1 p-4 rounded-2xl border transition-all duration-300 ${
-                      isStudentStop
-                        ? 'bg-gradient-to-r from-amber-950/30 via-slate-900/90 to-slate-900 border-amber-500/60 text-amber-100 shadow-xl shadow-amber-950/20 hover:border-amber-400'
-                        : isCurrentNode
-                        ? 'bg-gradient-to-r from-blue-950/50 via-slate-900/95 to-slate-900 border-blue-500/70 text-white shadow-2xl shadow-blue-950/40 hover:border-blue-400'
-                        : isPassed
-                        ? 'bg-slate-900/30 border-slate-800/60 text-slate-400'
-                        : 'bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700'
-                    }`}
+                    className="flex-1 p-4 rounded-2xl transition-all duration-300"
+                    style={cardStyle}
                   >
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                       <div className="space-y-1">
@@ -274,12 +313,16 @@ export function LiveRouteFlowchart({
                             {stop.name}
                           </h4>
                           {isStudentStop && (
-                            <span className="text-[10px] bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 px-2.5 py-0.5 rounded-full font-black shadow-xs flex items-center gap-1">
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-black flex items-center gap-1"
+                              style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', color: '#fff' }}
+                            >
                               <Sparkles size={11} /> YOUR BOARDING STOP
                             </span>
                           )}
                           {isDestination && (
-                            <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded-full font-extrabold border border-purple-500/40">
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold border"
+                              style={{ background: 'rgba(59,130,246,0.15)', color: '#93c5fd', borderColor: 'rgba(59,130,246,0.35)' }}
+                            >
                               DESTINATION
                             </span>
                           )}
@@ -292,20 +335,32 @@ export function LiveRouteFlowchart({
                       {/* Status Badges */}
                       <div className="self-start sm:self-auto">
                         {isCurrentNode ? (
-                          <div className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black rounded-xl shadow-lg shadow-blue-600/30 border border-blue-400/40 animate-bounce">
+                          <div
+                            className="flex items-center gap-2 px-3.5 py-1.5 text-white text-xs font-black rounded-xl border animate-bounce"
+                            style={{
+                              background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)',
+                              boxShadow: '0 4px 16px rgba(129,140,248,0.35)',
+                              borderColor: 'rgba(129,140,248,0.4)'
+                            }}
+                          >
                             <Bus size={15} />
                             <span>BUS HERE ({busLocation.speed.toFixed(0)} km/h)</span>
                           </div>
                         ) : isPassed ? (
-                          <span className="text-xs text-emerald-400 font-bold bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-800/40 flex items-center gap-1.5">
+                          <span
+                            className="text-xs font-bold px-3 py-1 rounded-xl border flex items-center gap-1.5"
+                            style={{ color: '#818cf8', background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)' }}
+                          >
                             <CheckCircle2 size={14} /> Passed
                           </span>
                         ) : (
-                          <span className={`text-xs font-black px-3 py-1.5 rounded-xl border ${
-                            isStudentStop 
-                              ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
-                              : 'bg-slate-800/90 text-slate-200 border-slate-700'
-                          }`}>
+                          <span
+                            className={`text-xs font-black px-3 py-1.5 rounded-xl border`}
+                            style={isStudentStop
+                              ? { background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', color: '#fff', borderColor: 'rgba(129,140,248,0.4)' }
+                              : { background: '#181a24', color: '#94a3b8', borderColor: '#2e334d' }
+                            }
+                          >
                             ETA ~{stopEtaMins} mins
                           </span>
                         )}
@@ -319,12 +374,17 @@ export function LiveRouteFlowchart({
         </div>
       ) : (
         /* HORIZONTAL PIPELINE VIEW */
-        <div className="bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 overflow-x-auto shadow-inner">
+        <div className="border border-[#222536] rounded-3xl p-6 overflow-x-auto shadow-inner" style={{ background: 'rgba(18,19,26,0.5)' }}>
           <div className="min-w-[700px] flex items-center justify-between relative py-6">
-            <div className="absolute top-1/2 left-8 right-8 h-2 bg-slate-800 -translate-y-1/2 rounded-full overflow-hidden shadow-inner">
+            {/* Progress track */}
+            <div className="absolute top-1/2 left-8 right-8 h-2 -translate-y-1/2 rounded-full overflow-hidden shadow-inner" style={{ background: '#222536' }}>
               <div
-                className="h-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-amber-400 transition-all duration-700 shadow-[0_0_12px_rgba(52,211,153,0.5)]"
-                style={{ width: `${progressInfo.progressPct}%` }}
+                className="h-full transition-all duration-700"
+                style={{
+                  width: `${progressInfo.progressPct}%`,
+                  background: 'linear-gradient(to right, #4f46e5, #818cf8, #a78bfa)',
+                  boxShadow: '0 0 12px rgba(129,140,248,0.4)'
+                }}
               />
             </div>
 
@@ -336,26 +396,33 @@ export function LiveRouteFlowchart({
               const stopRemDist = calculateDistanceKm(busLocation.lat, busLocation.lng, stop.lat, stop.lng)
               const stopEtaMins = Math.max(0, Math.round((stopRemDist / Math.max(busLocation.speed, 20)) * 60))
 
+              const nodeStyle: React.CSSProperties = isStudentStop
+                ? { background: 'linear-gradient(135deg, #4f46e5 0%, #a78bfa 100%)', boxShadow: '0 0 16px rgba(167,139,250,0.35)' }
+                : isDestination
+                ? { background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)', boxShadow: '0 0 16px rgba(99,102,241,0.3)' }
+                : isCurrentNode
+                ? { background: 'linear-gradient(135deg, #4f46e5 0%, #818cf8 100%)', boxShadow: '0 0 20px rgba(129,140,248,0.5)' }
+                : isPassed
+                ? { background: 'linear-gradient(135deg, #312e81 0%, #4338ca 100%)' }
+                : { background: '#1e2030', border: '1px solid #2e334d' }
+
+              const ringClass = isStudentStop
+                ? 'ring-4 ring-violet-400/30'
+                : isCurrentNode
+                ? 'ring-4 ring-indigo-400/40 animate-pulse'
+                : ''
+
               return (
                 <div key={stop.id || idx} className="relative z-10 flex flex-col items-center">
                   <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shadow-xl ${
-                      isStudentStop
-                        ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 ring-4 ring-amber-400/30'
-                        : isDestination
-                        ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white'
-                        : isCurrentNode
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white ring-4 ring-blue-500/40 animate-pulse'
-                        : isPassed
-                        ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white'
-                        : 'bg-slate-800 text-slate-400 border border-slate-700'
-                    }`}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-xs shadow-xl text-white ${ringClass}`}
+                    style={nodeStyle}
                   >
-                    {isStudentStop ? <Home size={18} /> : isDestination ? <School size={18} /> : isPassed ? <CheckCircle2 size={16} /> : <span>{idx + 1}</span>}
+                    {isStudentStop ? <Home size={18} /> : isDestination ? <School size={18} /> : isPassed ? <CheckCircle2 size={16} /> : <span className="text-slate-300">{idx + 1}</span>}
                   </div>
                   <div className="mt-2 text-center w-32">
                     <div className="text-xs font-black text-slate-200 truncate">{stop.name}</div>
-                    <div className="text-[10px] text-slate-400 font-bold mt-0.5">ETA ~{stopEtaMins}m</div>
+                    <div className="text-[10px] font-bold mt-0.5" style={{ color: '#818cf8' }}>ETA ~{stopEtaMins}m</div>
                   </div>
                 </div>
               )
@@ -364,20 +431,20 @@ export function LiveRouteFlowchart({
         </div>
       )}
 
-      {/* Footer Legend */}
-      <div className="pt-2 flex flex-wrap justify-between items-center gap-3 text-xs text-slate-400 border-t border-slate-800/80">
+      {/* Footer Legend — updated to site palette */}
+      <div className="pt-2 flex flex-wrap justify-between items-center gap-3 text-xs text-slate-400 border-t border-[#222536]">
         <div className="flex items-center gap-4 flex-wrap">
           <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> Passed Stop
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#4338ca', boxShadow: '0 0 8px rgba(79,70,229,0.5)' }} /> Passed Stop
           </span>
           <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> Bus Position
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#818cf8', boxShadow: '0 0 8px rgba(129,140,248,0.5)' }} /> Bus Position
           </span>
           <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block shadow-[0_0_8px_rgba(251,191,36,0.5)]" /> ⭐ Boarding Stop
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#a78bfa', boxShadow: '0 0 8px rgba(167,139,250,0.5)' }} /> ⭐ Boarding Stop
           </span>
           <span className="flex items-center gap-1.5 font-medium">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow-[0_0_8px_rgba(168,85,247,0.5)]" /> Destination
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#60a5fa', boxShadow: '0 0 8px rgba(96,165,250,0.5)' }} /> Destination
           </span>
         </div>
         <div className="text-[11px] text-slate-400 font-mono font-semibold">
