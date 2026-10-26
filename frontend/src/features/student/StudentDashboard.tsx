@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { LiveTrackingMap } from '../../components/maps/LiveTrackingMap'
 import { LiveRouteFlowchart } from '../../components/maps/LiveRouteFlowchart'
 import { AIVoiceAssistant } from '../../components/ai/AIVoiceAssistant'
 import { api } from '../../services/api'
 import { toast } from '../../services/toastService'
-import { Clock, MapPin, Users, BellRing, Home, Edit3, ShieldAlert, Check, Phone, MessageSquare, Bell, Zap, ShieldCheck } from 'lucide-react'
+import { Clock, MapPin, Users, BellRing, Home, Edit3, ShieldAlert, Check, Phone, MessageSquare, Bell, Zap, ShieldCheck, Activity, Wifi, WifiOff, TrendingUp } from 'lucide-react'
 import { NotificationService, type AlertSubscriptionConfig } from '../../services/notificationService'
 import { 
   COLLEGE_CONFIG, 
@@ -30,6 +30,9 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   return R * c
 }
+
+/** Data source indicator for telemetry origin */
+type DataSource = 'WEBSOCKET' | 'API_POLL' | 'SIMULATION' | 'AWAITING_DISPATCH'
 
 export function StudentDashboard() {
   const [selectedRouteId, setSelectedRouteId] = useState<number>(1)
@@ -73,30 +76,64 @@ export function StudentDashboard() {
   const [isAlertActive, setIsAlertActive] = useState<boolean>(true)
   const [hasAlertFired, setHasAlertFired] = useState<boolean>(false)
 
-  // Driver Bus Live Telemetry State
-  const [busPos, setBusPos] = useState<{ lat: number; lng: number; speed: number }>({
-    lat: activeStops[0].lat,
-    lng: activeStops[0].lng,
-    speed: 24.5
-  })
+  // ────────────────────────────────────────────────────────
+  // REAL-TIME TELEMETRY STATE
+  // ────────────────────────────────────────────────────────
+  const [busPos, setBusPos] = useState<{ lat: number; lng: number; speed: number } | null>(null)
+  const [isTripActive, setIsTripActive] = useState<boolean>(false)
   const [lastTelemetryTime, setLastTelemetryTime] = useState<Date>(new Date())
   const [secondsAgo, setSecondsAgo] = useState(0)
+  const [dataSource, setDataSource] = useState<DataSource>('AWAITING_DISPATCH')
 
-  const [currentStopIndex, setCurrentStopIndex] = useState<number>(0)
+  // Server-computed ETA from AI model (via WebSocket or API)
+  const [serverEta, setServerEta] = useState<{
+    eta_minutes: number
+    distance_km: number
+    confidence_score: number
+    traffic_factor: number
+    estimated_speed_kmh: number
+    stops_remaining: number
+    ml_model_version: string
+    computed_at: string
+  } | null>(null)
+
   const [occupancy] = useState<{ current: number; capacity: number }>({ current: 28, capacity: 45 })
 
-  // Update bus initial position when switching routes
+  // WebSocket connection ref
+  const wsRef = useRef<{ close: () => void } | null>(null)
+
+  // Reset telemetry and check if trip is actively dispatched when switching routes
   useEffect(() => {
-    if (activeStops.length > 0) {
-      setBusPos({
-        lat: activeStops[0].lat,
-        lng: activeStops[0].lng,
-        speed: 24.5
+    setBusPos(null)
+    setIsTripActive(false)
+    setServerEta(null)
+    setHasAlertFired(false)
+    setDataSource('AWAITING_DISPATCH')
+
+    let mounted = true
+    api.getTrips(true)
+      .then(activeTrips => {
+        if (!mounted) return
+        const activeTrip = activeTrips.find(t => t.route_id === selectedRouteId || t.id === selectedRouteId)
+        if (activeTrip) {
+          setIsTripActive(true)
+          setDataSource('API_POLL')
+          api.getBusLocation(activeRoute.code, activeTrip.id).then(gps => {
+            if (mounted && gps && gps.latitude && gps.longitude) {
+              setBusPos({
+                lat: gps.latitude,
+                lng: gps.longitude,
+                speed: gps.speed ?? 25.0
+              })
+              setLastTelemetryTime(new Date())
+            }
+          })
+        }
       })
-      setCurrentStopIndex(0)
-      setHasAlertFired(false)
-    }
-  }, [selectedRouteId, activeStops])
+      .catch(() => {})
+
+    return () => { mounted = false }
+  }, [selectedRouteId, activeRoute.code])
 
   // Fetch student saved stop from backend API on mount (only when authenticated)
   const token = useAuthStore(state => state.token)
@@ -117,11 +154,81 @@ export function StudentDashboard() {
     return () => { mounted = false }
   }, [token])
 
-  // Poll driver live location via WebSocket / HTTP polling fallback
+  // ────────────────────────────────────────────────────────
+  // WEBSOCKET: Primary real-time data source
+  // Subscribe to driver's live GPS broadcast with server-computed ETA
+  // ────────────────────────────────────────────────────────
+  const handleWebSocketMessage = useCallback((msg: any) => {
+    // 1. Trip dispatch lifecycle status updates
+    if (msg.type === 'TRIP_STATUS') {
+      if (msg.is_active || msg.status === 'active') {
+        setIsTripActive(true)
+        setDataSource('WEBSOCKET')
+      } else {
+        setIsTripActive(false)
+        setBusPos(null)
+        setServerEta(null)
+        setDataSource('AWAITING_DISPATCH')
+      }
+      return
+    }
+
+    // 2. Real-time GPS location updates from Driver
+    if (msg.type === 'LOCATION_UPDATE' && msg.latitude && msg.longitude) {
+      setIsTripActive(true)
+      setBusPos({
+        lat: msg.latitude,
+        lng: msg.longitude,
+        speed: msg.speed ?? 25.0
+      })
+      setLastTelemetryTime(new Date())
+      setDataSource('WEBSOCKET')
+
+      // Consume server-computed ETA from the enriched WebSocket payload
+      if (msg.eta) {
+        setServerEta({
+          eta_minutes: msg.eta.eta_minutes,
+          distance_km: msg.eta.distance_km,
+          confidence_score: msg.eta.confidence_score,
+          traffic_factor: msg.eta.traffic_factor,
+          estimated_speed_kmh: msg.eta.estimated_speed_kmh,
+          stops_remaining: msg.eta.stops_remaining ?? 1,
+          ml_model_version: msg.eta.ml_model_version ?? 'v2.1',
+          computed_at: msg.eta.computed_at ?? new Date().toISOString()
+        })
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    // Connect to WebSocket for the active trip
+    const tripId = selectedRouteId // Using route ID as trip ID for simplicity
+    wsRef.current = api.createTripWebSocket(tripId, handleWebSocketMessage)
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+    }
+  }, [selectedRouteId, handleWebSocketMessage])
+
+  // ────────────────────────────────────────────────────────
+  // HTTP POLLING FALLBACK: When WebSocket is stale (>10s)
+  // Only polls if trip has been actively dispatched by driver!
+  // ────────────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(async () => {
+      // If trip is not active, DO NOT poll or fabricate simulated bus movements!
+      if (!isTripActive) return
+
+      // Only poll if WebSocket data is stale (>10 seconds old)
+      const staleness = (new Date().getTime() - lastTelemetryTime.getTime()) / 1000
+      if (staleness < 10 && dataSource === 'WEBSOCKET') return
+
       try {
-        const busData = await api.getBusLocation(activeRoute.code)
+        // Try to get latest GPS from backend
+        const busData = await api.getBusLocation(activeRoute.code, selectedRouteId)
         if (busData && busData.latitude && busData.longitude) {
           setBusPos({
             lat: busData.latitude,
@@ -129,35 +236,36 @@ export function StudentDashboard() {
             speed: busData.speed ?? 28.0
           })
           setLastTelemetryTime(new Date())
-          return
+          setDataSource('API_POLL')
+
+          // Also fetch server-computed ETA to student's stop
+          if (token) {
+            try {
+              const etaData = await api.getStudentBusEta(selectedRouteId)
+              if (etaData && etaData.hasSavedStop && etaData.etaMinutes) {
+                setServerEta(prev => ({
+                  eta_minutes: etaData.etaMinutes!,
+                  distance_km: etaData.distanceRemainingKm ?? prev?.distance_km ?? 0,
+                  confidence_score: prev?.confidence_score ?? 0.85,
+                  traffic_factor: prev?.traffic_factor ?? 0.95,
+                  estimated_speed_kmh: prev?.estimated_speed_kmh ?? 25.0,
+                  stops_remaining: prev?.stops_remaining ?? 1,
+                  ml_model_version: prev?.ml_model_version ?? 'v2.1',
+                  computed_at: etaData.lastUpdated ?? new Date().toISOString()
+                }))
+              }
+            } catch (e) {
+              // Server ETA unavailable, will use client-side fallback
+            }
+          }
         }
       } catch (e) {
-        // Fallback simulation move
+        // Polling failed
       }
-
-      setBusPos(prev => {
-        const nextIdx = (currentStopIndex + 1) % activeStops.length
-        const targetStop = activeStops[nextIdx]
-        const stepRatio = 0.08
-        const newLat = prev.lat + (targetStop.lat - prev.lat) * stepRatio
-        const newLng = prev.lng + (targetStop.lng - prev.lng) * stepRatio
-
-        const dist = calculateDistanceKm(newLat, newLng, targetStop.lat, targetStop.lng)
-        if (dist < 0.05) {
-          setCurrentStopIndex(nextIdx)
-        }
-
-        return {
-          lat: newLat,
-          lng: newLng,
-          speed: Math.floor(22 + Math.random() * 15)
-        }
-      })
-      setLastTelemetryTime(new Date())
-    }, 3000)
+    }, 4000)
 
     return () => clearInterval(interval)
-  }, [activeRoute.code, activeStops, currentStopIndex])
+  }, [activeRoute.code, lastTelemetryTime, dataSource, token, selectedRouteId, isTripActive])
 
   // Track telemetry freshness counter
   useEffect(() => {
@@ -168,17 +276,55 @@ export function StudentDashboard() {
     return () => clearInterval(timer)
   }, [lastTelemetryTime])
 
-  // Calculate live metric predictions to saved student stop
+  // ────────────────────────────────────────────────────────
+  // STUDENT METRICS: Live calculations only when dispatched
+  // ────────────────────────────────────────────────────────
   const studentMetrics = useMemo(() => {
+    if (!isTripActive || !busPos) {
+      return {
+        distKm: 0,
+        etaMins: 0,
+        expectedTimeStr: "-- : --",
+        statusText: "AWAITING DRIVER DISPATCH",
+        statusColor: "text-amber-700 bg-amber-50 border-amber-300 font-bold",
+        confidenceScore: 0,
+        trafficFactor: 1.0,
+        isServerEta: false,
+        isDispatched: false
+      }
+    }
+
     const targetLat = savedStop?.latitude ?? activeStops[0].lat
     const targetLng = savedStop?.longitude ?? activeStops[0].lng
 
     const distKm = calculateDistanceKm(busPos.lat, busPos.lng, targetLat, targetLng)
     const distMeters = distKm * 1000
 
-    const speedKmH = busPos.speed > 5 ? busPos.speed : 25
-    const etaHours = distKm / speedKmH
-    const etaMins = Math.max(1, Math.round(etaHours * 60))
+    let etaMins: number
+    let confidenceScore: number
+    let trafficFactor: number
+    let isServerEta: boolean
+
+    if (serverEta && dataSource !== 'SIMULATION') {
+      const destDistKm = serverEta.distance_km
+      const studentDistKm = distKm
+      if (destDistKm > 0) {
+        const ratio = studentDistKm / destDistKm
+        etaMins = Math.max(1, Math.round(serverEta.eta_minutes * ratio))
+      } else {
+        etaMins = serverEta.eta_minutes
+      }
+      confidenceScore = serverEta.confidence_score
+      trafficFactor = serverEta.traffic_factor
+      isServerEta = true
+    } else {
+      const speedKmH = busPos.speed > 5 ? busPos.speed : 25
+      const etaHours = distKm / speedKmH
+      etaMins = Math.max(1, Math.round(etaHours * 60))
+      confidenceScore = 0.70
+      trafficFactor = 1.0
+      isServerEta = false
+    }
 
     const now = new Date()
     const arrivalTime = new Date(now.getTime() + etaMins * 60000)
@@ -203,9 +349,13 @@ export function StudentDashboard() {
       etaMins,
       expectedTimeStr: timeStr,
       statusText,
-      statusColor
+      statusColor,
+      confidenceScore,
+      trafficFactor,
+      isServerEta,
+      isDispatched: true
     }
-  }, [busPos, savedStop, activeStops])
+  }, [busPos, savedStop, activeStops, serverEta, dataSource, isTripActive])
 
   // Trigger Arrival Alert when ETA enters configured lead time window
   useEffect(() => {
@@ -292,6 +442,16 @@ export function StudentDashboard() {
     }
   }
 
+  /** Data source label helper */
+  /** Data source label helper */
+  const dataSourceLabel = dataSource === 'WEBSOCKET' 
+    ? { text: 'Live WebSocket', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: <Wifi size={13} /> }
+    : dataSource === 'API_POLL'
+    ? { text: 'API Polling', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200', icon: <Activity size={13} /> }
+    : dataSource === 'AWAITING_DISPATCH'
+    ? { text: 'Awaiting Driver Dispatch', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: <WifiOff size={13} /> }
+    : { text: 'Simulated', color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200', icon: <WifiOff size={13} /> }
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -334,7 +494,7 @@ export function StudentDashboard() {
       </div>
 
       {/* Live Active Proximity Trigger Banner */}
-      {studentMetrics.etaMins <= alertLeadTime && (
+      {isTripActive && busPos && studentMetrics.etaMins > 0 && studentMetrics.etaMins <= alertLeadTime && (
         <div className="bg-amber-500 text-slate-950 p-4 rounded-2xl shadow-xl flex items-center justify-between border-2 border-amber-300">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-slate-950 text-amber-400 rounded-xl shadow-xs">
@@ -361,13 +521,16 @@ export function StudentDashboard() {
         <div className="lg:col-span-2 space-y-4">
           {viewMode === 'flowchart' ? (
             <LiveRouteFlowchart
-              busLocation={busPos}
+              busLocation={isTripActive ? busPos : null}
               stops={activeStops}
               studentStop={savedStop ? { name: savedStop.stop_name, lat: savedStop.latitude, lng: savedStop.longitude } : null}
               busLabel={`${activeRoute.code} (${activeRoute.name.split('-')[1]?.trim() || 'Express'})`}
               destinationName={COLLEGE_CONFIG.collegeName}
               onToggleMapView={() => setViewMode('map')}
               showMapToggle={true}
+              serverEta={isTripActive ? serverEta : null}
+              dataSource={isTripActive ? dataSource : 'AWAITING_DISPATCH'}
+              isDispatched={isTripActive}
             />
           ) : (
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -378,7 +541,7 @@ export function StudentDashboard() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm font-display">{activeRoute.name}</h3>
-                    <p className="text-xs font-mono text-slate-500">{activeRoute.code} • Speed: {busPos.speed.toFixed(1)} km/h</p>
+                    <p className="text-xs font-mono text-slate-500">{activeRoute.code} • {isTripActive && busPos ? `Speed: ${busPos.speed.toFixed(1)} km/h` : 'Parked at Depot'}</p>
                   </div>
                 </div>
 
@@ -389,20 +552,21 @@ export function StudentDashboard() {
                   >
                     ⚡ Flowchart View
                   </button>
-                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-mono font-bold flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Live Streaming
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold flex items-center gap-1 ${dataSourceLabel.bg}`}>
+                    {dataSourceLabel.icon}
+                    <span className={dataSourceLabel.color}>{dataSourceLabel.text}</span>
                   </span>
                 </div>
               </div>
 
               <div className="h-[440px] rounded-xl overflow-hidden border border-slate-200">
                 <LiveTrackingMap 
-                  busLocation={busPos} 
+                  busLocation={isTripActive ? busPos : null} 
                   routePoints={activePolyline} 
                   stops={activeStops} 
                   studentStop={savedStop ? { name: savedStop.stop_name, lat: savedStop.latitude, lng: savedStop.longitude } : null}
                   busLabel={`${activeRoute.code} Express`}
+                  isDispatched={isTripActive}
                 />
               </div>
             </div>
@@ -479,33 +643,84 @@ export function StudentDashboard() {
               </span>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-5 text-center space-y-1">
-              <div className="text-4xl font-black text-blue-700 font-mono tracking-tight">
-                {studentMetrics.etaMins} <span className="text-base font-bold text-slate-700">mins</span>
+            {isTripActive && busPos ? (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-5 text-center space-y-1">
+                <div className="text-4xl font-black text-blue-700 font-mono tracking-tight">
+                  {studentMetrics.etaMins} <span className="text-base font-bold text-slate-700">mins</span>
+                </div>
+                <p className="text-xs font-bold text-slate-800">
+                  Expected Arrival: <span className="text-blue-900 font-extrabold font-mono">{studentMetrics.expectedTimeStr}</span>
+                </p>
+                <p className="text-[11px] text-slate-600 font-mono font-bold pt-1">
+                  Distance: <span className="font-extrabold text-slate-900">{studentMetrics.distKm} km</span>
+                </p>
               </div>
-              <p className="text-xs font-bold text-slate-800">
-                Expected Arrival: <span className="text-blue-900 font-extrabold font-mono">{studentMetrics.expectedTimeStr}</span>
-              </p>
-              <p className="text-[11px] text-slate-600 font-mono font-bold pt-1">
-                Distance: <span className="font-extrabold text-slate-900">{studentMetrics.distKm} km</span>
-              </p>
+            ) : (
+              <div className="bg-gradient-to-br from-amber-50/50 via-slate-50 to-amber-50/20 border border-amber-200 rounded-xl p-5 text-center space-y-1.5">
+                <div className="text-3xl font-black text-amber-700 font-mono tracking-tight">
+                  -- <span className="text-sm font-bold text-slate-600">mins</span>
+                </div>
+                <p className="text-xs font-bold text-slate-800">
+                  Bus Parked at Depot • Awaiting Driver Dispatch
+                </p>
+                <p className="text-[11px] text-slate-500 font-mono font-medium">
+                  Countdown starts once driver departs
+                </p>
+              </div>
+            )}
+
+            {/* AI Model Confidence & Traffic Strip */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className={`p-2.5 rounded-xl border text-center ${isTripActive && studentMetrics.isServerEta ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="text-[10px] text-slate-500 font-bold uppercase">AI Confidence</div>
+                <div className={`text-sm font-black font-mono ${isTripActive && studentMetrics.isServerEta ? 'text-emerald-700' : 'text-slate-400'}`}>
+                  {isTripActive ? `${(studentMetrics.confidenceScore * 100).toFixed(0)}%` : '--'}
+                </div>
+              </div>
+              <div className={`p-2.5 rounded-xl border text-center ${isTripActive && studentMetrics.trafficFactor < 0.8 ? 'bg-rose-50 border-rose-200' : 'bg-blue-50 border-blue-200'}`}>
+                <div className="text-[10px] text-slate-500 font-bold uppercase flex items-center justify-center gap-1">
+                  <TrendingUp size={11} /> Traffic
+                </div>
+                <div className={`text-sm font-black font-mono ${!isTripActive ? 'text-slate-400' : studentMetrics.trafficFactor < 0.8 ? 'text-rose-700' : 'text-blue-700'}`}>
+                  {!isTripActive ? 'Normal' : studentMetrics.trafficFactor < 0.75 ? 'Heavy' : studentMetrics.trafficFactor < 0.90 ? 'Moderate' : 'Clear'}
+                </div>
+              </div>
             </div>
 
             {/* Telemetry Status */}
             <div className="mt-4 flex items-center justify-between text-[11px] font-mono text-slate-500 border-t border-slate-200 pt-3">
               <span className="flex items-center gap-1">
-                {secondsAgo > 15 ? (
-                  <span className="text-rose-600 font-bold flex items-center gap-1">
-                    <ShieldAlert size={13} /> ⚠ GPS {secondsAgo}s ago
-                  </span>
+                {isTripActive && busPos ? (
+                  secondsAgo > 15 ? (
+                    <span className="text-rose-600 font-bold flex items-center gap-1">
+                      <ShieldAlert size={13} /> ⚠ GPS {secondsAgo}s ago
+                    </span>
+                  ) : (
+                    <span className={`font-bold flex items-center gap-1.5 ${dataSourceLabel.color}`}>
+                      {dataSourceLabel.icon}
+                      <span>{dataSourceLabel.text}</span>
+                    </span>
+                  )
                 ) : (
-                  <span className="text-emerald-700 font-bold flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Live Telemetry
+                  <span className="text-amber-700 font-bold flex items-center gap-1">
+                    <WifiOff size={13} /> Awaiting Driver Dispatch
                   </span>
                 )}
               </span>
-              <span className="text-slate-600 font-bold">{activeRoute.code} • {busPos.speed.toFixed(0)} km/h</span>
+              <span className="text-slate-600 font-bold">
+                {activeRoute.code} • {isTripActive && busPos ? `${busPos.speed.toFixed(0)} km/h` : 'Parked'}
+              </span>
             </div>
+
+            {/* Server ETA Badge */}
+            {isTripActive && studentMetrics.isServerEta && (
+              <div className="mt-2 text-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-mono font-black rounded-full">
+                  <Activity size={11} />
+                  AI Model ETA • {serverEta?.ml_model_version}
+                </span>
+              </div>
+            )}
 
             {/* Occupancy Progress */}
             <div className="mt-4 space-y-1.5">

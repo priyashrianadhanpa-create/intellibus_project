@@ -149,8 +149,8 @@ export const api = {
       body: JSON.stringify({ status: 'completed' })
     }).catch(() => ({ id: tripId, status: 'completed' }))
   },
-  getBusLocation: async (_busCode: string) => {
-    return request<any>('/trips?active_only=true').catch(() => null)
+  getBusLocation: async (_busCode: string, tripId: number = 1) => {
+    return request<any>(`/trips/${tripId}/latest-gps`).catch(() => null)
   },
 
   // AI Endpoints
@@ -168,6 +168,20 @@ export const api = {
   },
   getTrafficHeatmap: async () => {
     return request<{ heatmap: Array<{ hour: number; label: string; traffic_factor: number; congestion_level: string; estimated_delay_mins: number }> }>('/ai/traffic-heatmap')
+  },
+
+  // Server-computed ETA from driver live GPS to student's saved stop
+  getStudentBusEta: async (tripId: number = 1) => {
+    return request<{
+      hasSavedStop: boolean
+      busId?: string
+      currentLocation?: { latitude: number; longitude: number }
+      studentStop?: { name: string; address: string; latitude: number; longitude: number }
+      distanceRemainingKm?: number
+      etaMinutes?: number
+      status?: string
+      lastUpdated?: string
+    }>(`/student/bus/eta?trip_id=${tripId}`)
   },
 
   // Alerts
@@ -236,6 +250,14 @@ export const api = {
     connect()
 
     return {
+      get readyState() {
+        return ws ? ws.readyState : WebSocket.CLOSED
+      },
+      send: (data: string | Blob | ArrayBufferView | ArrayBuffer) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(data as any)
+        }
+      },
       close: () => {
         isClosedExplicitly = true
         if (ws) ws.close()

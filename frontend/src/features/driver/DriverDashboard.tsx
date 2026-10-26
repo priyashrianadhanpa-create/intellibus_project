@@ -58,6 +58,7 @@ export function DriverDashboard() {
               speed: currentSpeedKmh,
               bearing: heading || 180,
               source: "REAL_DRIVER_MOBILE_GPS",
+              route_code: "BUS-101",
               timestamp: new Date().toISOString()
             }
 
@@ -102,6 +103,7 @@ export function DriverDashboard() {
             longitude: newLng,
             speed: speed,
             source: "SIMULATED_DRIVER_GPS",
+            route_code: "BUS-101",
             timestamp: new Date().toISOString()
           }
 
@@ -122,22 +124,30 @@ export function DriverDashboard() {
 
   const handleStartTrip = async () => {
     try {
-      await api.startTrip({ route_id: 1, bus_id: 1, driver_id: 1 })
-    } catch (e) {}
+      await api.updateTripStatus(1, 'active')
+    } catch (e) {
+      try {
+        await api.startTrip({ route_id: 1, bus_id: 1, driver_id: 1 })
+      } catch (e2) {}
+    }
 
     setTripStatus('active')
     setIsBroadcasting(true)
-    toast.success("Dispatch Started", "Live GPS telemetry broadcast is active.")
+    toast.success("Dispatch Started", "Live GPS telemetry broadcast is active. Students can now track this bus.")
   }
 
   const handleEndTrip = async () => {
     try {
-      await api.endTrip(1)
-    } catch (e) {}
+      await api.updateTripStatus(1, 'completed')
+    } catch (e) {
+      try {
+        await api.endTrip(1)
+      } catch (e2) {}
+    }
 
     setTripStatus('completed')
     setIsBroadcasting(false)
-    toast.info("Trip Concluded", "Dispatch session ended successfully.")
+    toast.info("Trip Concluded", "Dispatch session ended successfully. Bus marked parked at depot.")
   }
 
   const handleNextStop = () => {
@@ -222,12 +232,13 @@ export function DriverDashboard() {
         <div className="lg:col-span-2 space-y-4">
           {viewMode === 'flowchart' ? (
             <LiveRouteFlowchart
-              busLocation={driverPos}
+              busLocation={tripStatus === 'active' ? driverPos : null}
               stops={routeStops}
               busLabel="BUS-101 (IFET Driver)"
               destinationName={COLLEGE_CONFIG.collegeName}
               onToggleMapView={() => setViewMode('map')}
               showMapToggle={true}
+              isDispatched={tripStatus === 'active'}
             />
           ) : (
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -259,10 +270,11 @@ export function DriverDashboard() {
 
               <div className="h-[420px] rounded-xl overflow-hidden border border-slate-200">
                 <LiveTrackingMap 
-                  busLocation={driverPos} 
+                  busLocation={tripStatus === 'active' ? driverPos : null} 
                   routePoints={routeStops.map(s => [s.lat, s.lng])} 
                   stops={routeStops} 
                   busLabel="BUS-101 (IFET Express)"
+                  isDispatched={tripStatus === 'active'}
                 />
               </div>
             </div>

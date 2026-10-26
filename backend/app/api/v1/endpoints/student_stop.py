@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 import math
+import datetime
 from ....database import get_db
 from ....models.user import User
 from ....crud import get_student_stop, create_or_update_student_stop, delete_student_stop, get_latest_gps, get_stops
@@ -94,6 +95,14 @@ def remove_student_stop(
         raise HTTPException(status_code=404, detail="No active stop to delete")
     return {"message": "Student stop deleted successfully"}
 
+try:
+    from ....ml.eta_model import eta_predictor
+except ImportError:
+    try:
+        from app.ml.eta_model import eta_predictor
+    except ImportError:
+        eta_predictor = None
+
 @router.get("/student/bus/eta")
 def get_student_bus_eta(
     trip_id: int = 1,
@@ -101,7 +110,7 @@ def get_student_bus_eta(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """
-    Calculate dynamic ETA from driver live GPS to student's saved stop
+    Calculate dynamic ETA from driver live GPS to student's saved stop using the AI model
     """
     student_stop = get_student_stop(db, student_id=current_user.id)
     if not student_stop:
@@ -110,13 +119,39 @@ def get_student_bus_eta(
             "message": "No saved student boarding stop found"
         }
 
+    from ....crud import get_trip
+    from ....models.trip import TripStatus
+    trip = get_trip(db, trip_id=trip_id)
+    is_dispatched = (trip is not None and trip.status == TripStatus.ACTIVE)
+
     latest_gps = get_latest_gps(db, trip_id=trip_id)
     driver_lat = latest_gps.latitude if latest_gps else 11.9392
     driver_lng = latest_gps.longitude if latest_gps else 79.4975
     speed_kmh = max(latest_gps.speed if latest_gps else 25.0, 15.0)
 
-    dist_km = haversine_km(driver_lat, driver_lng, student_stop.latitude, student_stop.longitude)
-    eta_mins = max(1, round((dist_km / speed_kmh) * 60))
+    # Use AI predictor if available
+    traffic_factor = 1.0
+    confidence = 0.90
+    arrival_time_str = None
+
+    if eta_predictor:
+        prediction = eta_predictor.predict_eta(
+            current_lat=driver_lat,
+            current_lng=driver_lng,
+            target_lat=student_stop.latitude,
+            target_lng=student_stop.longitude,
+            current_speed_kmh=speed_kmh,
+            stop_count_remaining=1
+        )
+        dist_km = prediction["distance_km"]
+        eta_mins = round(prediction["eta_minutes"])
+        traffic_factor = prediction.get("traffic_factor", 1.0)
+        confidence = prediction.get("confidence_score", prediction.get("confidence", 0.90))
+        now = datetime.datetime.now()
+        arrival_time_str = prediction.get("estimated_arrival_time") or (now + datetime.timedelta(minutes=eta_mins)).strftime("%I:%M %p")
+    else:
+        dist_km = haversine_km(driver_lat, driver_lng, student_stop.latitude, student_stop.longitude)
+        eta_mins = max(1, round((dist_km / speed_kmh) * 60))
 
     # Determine proximity status
     status_str = "ON_ROUTE"
@@ -130,6 +165,7 @@ def get_student_bus_eta(
 
     return {
         "hasSavedStop": True,
+        "isDispatched": is_dispatched,
         "busId": "BUS-101",
         "currentLocation": {
             "latitude": driver_lat,
@@ -143,6 +179,11 @@ def get_student_bus_eta(
         },
         "distanceRemainingKm": round(dist_km, 2),
         "etaMinutes": eta_mins,
+        "trafficFactor": traffic_factor,
+        "confidence": confidence,
+        "estimatedArrivalTime": arrival_time_str,
+        "isLiveGps": latest_gps is not None,
         "status": status_str,
         "lastUpdated": latest_gps.timestamp.isoformat() if latest_gps and latest_gps.timestamp else None
     }
+

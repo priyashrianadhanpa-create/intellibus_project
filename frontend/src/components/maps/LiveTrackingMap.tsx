@@ -39,13 +39,14 @@ const destinationDivIcon = L.divIcon({
 })
 
 interface LiveTrackingMapProps {
-  busLocation?: { lat: number; lng: number; speed?: number }
+  busLocation?: { lat: number; lng: number; speed?: number } | null
   routePoints?: [number, number][]
   stops?: { id: number; name: string; lat: number; lng: number; isDestination?: boolean }[]
   studentStop?: { name: string; lat: number; lng: number } | null
   center?: [number, number]
   zoom?: number
   busLabel?: string
+  isDispatched?: boolean
 }
 
 /**
@@ -59,7 +60,7 @@ function MapBoundsScaler({
 }: { 
   routePoints?: [number, number][]
   stops?: { lat: number; lng: number }[]
-  busLocation?: { lat: number; lng: number }
+  busLocation?: { lat: number; lng: number } | null
   studentStop?: { lat: number; lng: number } | null
 }) {
   const map = useMap()
@@ -90,19 +91,28 @@ function MapBoundsScaler({
 export function LiveTrackingMap({ 
   busLocation, 
   routePoints = [], 
-  stops = [],
+  stops = [], 
   studentStop,
   center = [11.9207389, 79.6107319], 
   zoom = 13,
-  busLabel = "BUS-101 (IFET Express)"
+  busLabel = "BUS-101 (IFET Express)",
+  isDispatched = true
 }: LiveTrackingMapProps) {
   
-  const effectiveCenter: [number, number] = busLocation 
+  const effectiveCenter: [number, number] = (isDispatched && busLocation)
     ? [busLocation.lat, busLocation.lng] 
     : (stops.length > 0 ? [stops[0].lat, stops[0].lng] : center)
 
   return (
     <div className="w-full h-full min-h-[420px] rounded-xl overflow-hidden border border-slate-200 shadow-sm relative z-0">
+      {/* Awaiting Dispatch Banner Overlay when no driver is dispatched */}
+      {!isDispatched && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-slate-900/90 text-white px-4 py-2 rounded-full border border-slate-700 shadow-xl flex items-center gap-2 text-xs font-bold backdrop-blur-md">
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span>Bus Parked at Depot • Awaiting Driver Dispatch</span>
+        </div>
+      )}
+
       <MapContainer 
         center={effectiveCenter} 
         zoom={zoom} 
@@ -118,7 +128,7 @@ export function LiveTrackingMap({
         <MapBoundsScaler 
           routePoints={routePoints} 
           stops={stops} 
-          busLocation={busLocation} 
+          busLocation={isDispatched ? busLocation : null} 
           studentStop={studentStop} 
         />
 
@@ -172,8 +182,8 @@ export function LiveTrackingMap({
           </Marker>
         )}
 
-        {/* Live Bus Marker */}
-        {busLocation && (
+        {/* Live Bus Marker ONLY when Driver starts dispatch */}
+        {isDispatched && busLocation && (
           <Marker position={[busLocation.lat, busLocation.lng]} icon={busDivIcon}>
             <Popup>
               <div className="p-1 font-sans">

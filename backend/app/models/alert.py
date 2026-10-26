@@ -15,6 +15,6 @@ class Alert(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     message = Column(String, nullable=False)
-    category = Column(Enum(AlertCategory), default=AlertCategory.GENERAL, nullable=False)
+    category = Column(Enum(AlertCategory, native_enum=False), default=AlertCategory.GENERAL, nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

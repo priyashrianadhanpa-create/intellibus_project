@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# IntelliBus AI Platform One-Click Production Deployer (Linux / Docker)
+# IntelliBus AI Platform One-Click Enterprise Production Deployer (Linux / Docker)
 
 set -e
 
@@ -19,19 +19,22 @@ if [ ! -f .env ]; then
     cp .env.production .env
 fi
 
-echo "[2/4] Building production container images..."
-docker-compose build --no-cache
+echo "[2/4] Building enterprise production container images..."
+docker compose build --no-cache
 
-echo "[3/4] Starting IntelliBus container stack..."
-docker-compose up -d
+echo "[3/4] Starting IntelliBus enterprise container stack..."
+docker compose up -d
 
 echo "[4/4] Verifying health of services..."
-sleep 5
-docker-compose ps
+sleep 6
+docker compose ps
 
 echo "======================================================================="
-echo "   PRODUCTION DEPLOYMENT SUCCESSFUL!"
+echo "   ENTERPRISE PRODUCTION DEPLOYMENT SUCCESSFUL!"
 echo "   - Web App UI: http://localhost (Port 80)"
+echo "   - API Root: http://localhost:8000"
 echo "   - API Swagger Docs: http://localhost:8000/api/v1/openapi.json"
 echo "   - API Health Check: http://localhost:8000/health"
+echo "   - PostGIS 15 Spatial DB: localhost:5432"
+echo "   - MQTT Broker: mqtt://localhost:1883"
 echo "======================================================================="

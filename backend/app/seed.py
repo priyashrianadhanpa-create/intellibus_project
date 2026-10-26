@@ -13,19 +13,20 @@ def seed_database(db: Session):
     # Ensure tables exist
     Base.metadata.create_all(bind=engine)
 
-    # Automatic migration check for SQLite dev database missing preferred_stop columns
-    with engine.connect() as conn:
-        for col_def in [
-            "ALTER TABLE users ADD COLUMN preferred_stop_id INTEGER;",
-            "ALTER TABLE users ADD COLUMN preferred_stop_name VARCHAR;",
-            "ALTER TABLE users ADD COLUMN preferred_lat FLOAT;",
-            "ALTER TABLE users ADD COLUMN preferred_lng FLOAT;"
-        ]:
-            try:
-                conn.execute(text(col_def))
-                conn.commit()
-            except Exception:
-                pass  # Column already exists
+    # SQLite dev fallback migration check (PostgreSQL tables already include all columns)
+    if str(engine.url).startswith("sqlite"):
+        with engine.connect() as conn:
+            for col_def in [
+                "ALTER TABLE users ADD COLUMN preferred_stop_id INTEGER;",
+                "ALTER TABLE users ADD COLUMN preferred_stop_name VARCHAR;",
+                "ALTER TABLE users ADD COLUMN preferred_lat FLOAT;",
+                "ALTER TABLE users ADD COLUMN preferred_lng FLOAT;"
+            ]:
+                try:
+                    conn.execute(text(col_def))
+                    conn.commit()
+                except Exception:
+                    pass
 
     # 1. Create Default Users if not exist
     users_to_create = [

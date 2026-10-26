@@ -25,12 +25,29 @@ def read_trip(trip_id: int, db: Session = Depends(get_db)):
     return db_trip
 
 @router.patch("/{trip_id}/status", response_model=TripResponse)
-def change_trip_status(trip_id: int, trip_update: TripUpdate, db: Session = Depends(get_db)):
+async def change_trip_status(trip_id: int, trip_update: TripUpdate, db: Session = Depends(get_db)):
     if not trip_update.status:
         raise HTTPException(status_code=400, detail="Status required")
     updated = update_trip_status(db, trip_id, trip_update.status)
     if not updated:
         raise HTTPException(status_code=404, detail="Trip not found")
+    
+    # Broadcast status change to WebSocket subscribers (Student & Driver consoles)
+    try:
+        from app.websocket.manager import ws_manager
+        from app.models.trip import TripStatus
+        status_val = updated.status.value if hasattr(updated.status, 'value') else str(updated.status)
+        is_active = (updated.status == TripStatus.ACTIVE)
+        await ws_manager.broadcast_to_trip(trip_id, {
+            "type": "TRIP_STATUS",
+            "trip_id": trip_id,
+            "status": status_val,
+            "is_active": is_active,
+            "message": "Driver started dispatch." if is_active else "Driver concluded trip."
+        })
+    except Exception:
+        pass
+
     return updated
 
 @router.get("/{trip_id}/latest-gps", response_model=GPSPointResponse)

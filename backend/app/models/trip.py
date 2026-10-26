@@ -21,7 +21,7 @@ class Trip(Base):
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)
     
-    status = Column(Enum(TripStatus), default=TripStatus.SCHEDULED, nullable=False)
+    status = Column(Enum(TripStatus, native_enum=False), default=TripStatus.SCHEDULED, nullable=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

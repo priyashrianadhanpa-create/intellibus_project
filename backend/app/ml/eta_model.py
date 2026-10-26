@@ -66,3 +66,4 @@ class ETAPredictor:
         }
 
 predictor = ETAPredictor()
+eta_predictor = predictor
