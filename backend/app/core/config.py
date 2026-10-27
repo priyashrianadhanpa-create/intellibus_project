@@ -16,10 +16,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 7)))  # 7 days
     
-    # Database
+    # Database — Render injects DATABASE_URL automatically when a Postgres DB is linked.
+    # Falls back to SQLite for local dev or if no DB is linked on cloud platforms.
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", 
-        "postgresql+psycopg2://postgres:ptsye9wBds3lrRPrj_eRsQ@localhost:5432/intellibus"
+        "DATABASE_URL",
+        f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'intellibus_dev.db'))}"
     )
     
     # CORS Origins (accepts JSON list or comma-separated string)
