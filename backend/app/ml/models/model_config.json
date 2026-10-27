@@ -1,0 +1,16 @@
+{
+  "window_size": 10,
+  "features": [
+    "speed_kmph",
+    "remaining_distance_km",
+    "elapsed_trip_min",
+    "traffic_factor",
+    "stops_remaining"
+  ],
+  "input_dim": 5,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "dropout": 0.2,
+  "model_path": "ml/models/lstm_eta_model.pth",
+  "trained_at": "2026-10-27T21:51:00.560693"
+}

@@ -1,0 +1,48 @@
+{
+  "evaluation_summary": {
+    "test_sample_size": 1975,
+    "unseen_test_trips": [
+      "TRIP-BUS-102-022",
+      "TRIP-BUS-101-022",
+      "TRIP-BUS-101-003",
+      "TRIP-BUS-102-003",
+      "TRIP-BUS-101-021",
+      "TRIP-BUS-102-025",
+      "TRIP-BUS-102-002",
+      "TRIP-BUS-102-038",
+      "TRIP-BUS-102-033",
+      "TRIP-BUS-101-015",
+      "TRIP-BUS-101-024",
+      "TRIP-BUS-102-043",
+      "TRIP-BUS-102-037",
+      "TRIP-BUS-102-042",
+      "TRIP-BUS-102-011"
+    ],
+    "window_size": 10,
+    "features_used": [
+      "speed_kmph",
+      "remaining_distance_km",
+      "elapsed_trip_min",
+      "traffic_factor",
+      "stops_remaining"
+    ],
+    "target": "remaining_time_min"
+  },
+  "metrics_comparison": {
+    "baseline_heuristic_model": {
+      "method": "Haversine Distance / Speed * Traffic Multiplier + Dwell",
+      "mae_minutes": 5.08,
+      "rmse_minutes": 6.99
+    },
+    "lstm_deep_learning_model": {
+      "architecture": "2-Layer LSTM (64 hidden) + Dropout(0.2) + Dense(32) + Dense(1)",
+      "mae_minutes": 0.91,
+      "rmse_minutes": 1.14
+    },
+    "performance_gain": {
+      "mae_improvement_percent": "82.18%",
+      "rmse_improvement_percent": "83.76%",
+      "verdict": "LSTM significantly outperforms static heuristic baseline by learning dynamic traffic and dwell patterns"
+    }
+  }
+}

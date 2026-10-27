@@ -214,6 +214,39 @@ export function StudentDashboard() {
   }, [selectedRouteId, handleWebSocketMessage])
 
   // ────────────────────────────────────────────────────────
+  // TRIP STATUS POLL: Detect dispatch even if student missed
+  // the WS TRIP_STATUS broadcast (e.g. opened app after driver started).
+  // Runs every 5s; stops polling once trip is confirmed active.
+  // ────────────────────────────────────────────────────────
+  useEffect(() => {
+    // If already active no need to keep polling
+    if (isTripActive) return
+
+    const statusInterval = setInterval(async () => {
+      try {
+        const activeTrips = await api.getTrips(true)
+        const activeTrip = activeTrips.find(
+          (t: any) => t.route_id === selectedRouteId || t.id === selectedRouteId
+        )
+        if (activeTrip) {
+          setIsTripActive(true)
+          setDataSource('API_POLL')
+          // Fetch last known GPS so the map populates right away
+          try {
+            const gps = await api.getBusLocation(activeRoute.code, selectedRouteId)
+            if (gps && gps.latitude && gps.longitude) {
+              setBusPos({ lat: gps.latitude, lng: gps.longitude, speed: gps.speed ?? 25.0 })
+              setLastTelemetryTime(new Date())
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
+    }, 5000)
+
+    return () => clearInterval(statusInterval)
+  }, [isTripActive, selectedRouteId, activeRoute.code])
+
+  // ────────────────────────────────────────────────────────
   // HTTP POLLING FALLBACK: When WebSocket is stale (>10s)
   // Only polls if trip has been actively dispatched by driver!
   // ────────────────────────────────────────────────────────

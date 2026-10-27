@@ -86,3 +86,13 @@ def health_check():
 # Include routers
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(ws_router)
+
+@app.on_event("startup")
+def on_startup():
+    db = SessionLocal()
+    try:
+        seed_database(db)
+    except Exception as e:
+        print(f"[Startup] Database auto-seed notification: {e}")
+    finally:
+        db.close()

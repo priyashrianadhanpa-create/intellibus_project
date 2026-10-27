@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Union
 import sys
 import os
 
@@ -25,6 +25,9 @@ class ETARequest(BaseModel):
     current_speed_kmh: Optional[float] = 25.0
     traffic_factor: Optional[float] = 1.0
     stop_count_remaining: Optional[int] = 1
+    trip_id: Optional[Union[int, str]] = None
+    elapsed_trip_min: Optional[float] = 0.0
+    sequence_history: Optional[List[dict]] = None
 
 class RouteOptimizeRequest(BaseModel):
     origin_stop_id: int
@@ -43,11 +46,33 @@ def predict_eta(req: ETARequest):
             target_lng=req.target_lng,
             current_speed_kmh=req.current_speed_kmh,
             traffic_congestion_factor=req.traffic_factor,
-            stop_count_remaining=req.stop_count_remaining
+            stop_count_remaining=req.stop_count_remaining,
+            trip_id=req.trip_id,
+            elapsed_trip_min=req.elapsed_trip_min,
+            sequence_history=req.sequence_history
         )
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/evaluation-benchmark")
+def get_evaluation_benchmark():
+    import json
+    # Try finding evaluation_report.json
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.abspath(os.path.join(curr_dir, "..", "..", "..", "ml", "models", "evaluation_report.json")),
+        os.path.abspath(os.path.join(curr_dir, "..", "..", "..", "..", "ml", "models", "evaluation_report.json")),
+        os.path.abspath(os.path.join(curr_dir, "..", "..", "..", "..", "..", "ml", "models", "evaluation_report.json")),
+        os.path.abspath(os.path.join(os.getcwd(), "ml", "models", "evaluation_report.json")),
+        os.path.abspath(os.path.join(os.getcwd(), "backend", "app", "ml", "models", "evaluation_report.json")),
+    ]
+    for path in candidates:
+        norm = os.path.normpath(path)
+        if os.path.exists(norm):
+            with open(norm, "r", encoding="utf-8") as f:
+                return json.load(f)
+    return {"status": "pending", "message": "Evaluation report not generated yet. Run ml/train_lstm.py."}
 
 @router.get("/traffic-heatmap")
 def get_traffic_heatmap():

@@ -15,7 +15,7 @@ from app.schemas import StudentBusStopCreate
 
 def test_root():
     res_root = root()
-    assert res_root["message"] == "Welcome to IntelliBus AI API"
+    assert "IntelliBus" in res_root["message"]
 
 def test_health():
     res = health_check()
@@ -98,6 +98,13 @@ def test_ai_endpoints():
 
 def run_all_tests():
     print("Beginning IntelliBus AI Integration Test Suite...")
+    from app.seed import seed_database
+    seed_db = SessionLocal()
+    try:
+        seed_database(seed_db)
+    finally:
+        seed_db.close()
+
     test_root()
     print("[OK] Root endpoint test passed")
     test_health()

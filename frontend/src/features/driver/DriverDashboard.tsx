@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { LiveTrackingMap } from '../../components/maps/LiveTrackingMap'
 import { LiveRouteFlowchart } from '../../components/maps/LiveRouteFlowchart'
 import { api } from '../../services/api'
@@ -18,7 +18,11 @@ export function DriverDashboard() {
   const [delayNotice, setDelayNotice] = useState<string | null>(null)
   const [routeStops, setRouteStops] = useState<CampusStop[]>(INITIAL_STOPS)
   const [viewMode, setViewMode] = useState<'flowchart' | 'map'>('flowchart')
-  
+
+  // Persistent WebSocket ref — alive for the full driver session
+  // Sends TRIP_START / TRIP_END control messages so backend broadcasts TRIP_STATUS to all students
+  const persistentWsRef = useRef<ReturnType<typeof api.createTripWebSocket> | null>(null)
+
   const [driverPos, setDriverPos] = useState({
     lat: COLLEGE_CONFIG.customStops[0].lat,
     lng: COLLEGE_CONFIG.customStops[0].lng,
@@ -122,7 +126,37 @@ export function DriverDashboard() {
     }
   }, [isBroadcasting, useHardwareGps, currentStopIndex, routeStops])
 
+  // ── Persistent control-channel WebSocket (driver → backend → broadcast to all students) ──
+  useEffect(() => {
+    const ws = api.createTripWebSocket(1, (msg) => {
+      // Driver receives ACKs / status confirmations here
+      console.log('[Driver WS ACK]', msg)
+    })
+    persistentWsRef.current = ws
+    return () => {
+      ws.close()
+      persistentWsRef.current = null
+    }
+  }, [])
+
+  /** Send a WS control message over the persistent channel */
+  const sendControlMessage = (type: string, extra: Record<string, unknown> = {}) => {
+    const ws = persistentWsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type, trip_id: 1, bus_id: 1, ...extra }))
+    } else {
+      // WS not ready yet — retry once after brief delay (e.g. first load)
+      setTimeout(() => {
+        const ws2 = persistentWsRef.current
+        if (ws2 && ws2.readyState === WebSocket.OPEN) {
+          ws2.send(JSON.stringify({ type, trip_id: 1, bus_id: 1, ...extra }))
+        }
+      }, 800)
+    }
+  }
+
   const handleStartTrip = async () => {
+    // 1. Persist status change via REST (authoritative source)
     try {
       await api.updateTripStatus(1, 'active')
     } catch (e) {
@@ -131,12 +165,17 @@ export function DriverDashboard() {
       } catch (e2) {}
     }
 
+    // 2. *** FIX: Send TRIP_START over WebSocket so backend broadcasts TRIP_STATUS
+    //    to ALL connected student clients immediately ***
+    sendControlMessage('TRIP_START', { status: 'active' })
+
     setTripStatus('active')
     setIsBroadcasting(true)
     toast.success("Dispatch Started", "Live GPS telemetry broadcast is active. Students can now track this bus.")
   }
 
   const handleEndTrip = async () => {
+    // 1. Persist status change via REST
     try {
       await api.updateTripStatus(1, 'completed')
     } catch (e) {
@@ -144,6 +183,9 @@ export function DriverDashboard() {
         await api.endTrip(1)
       } catch (e2) {}
     }
+
+    // 2. *** FIX: Send TRIP_END so backend broadcasts trip-concluded TRIP_STATUS to students ***
+    sendControlMessage('TRIP_END', { status: 'completed' })
 
     setTripStatus('completed')
     setIsBroadcasting(false)

@@ -90,7 +90,8 @@ async def live_location_websocket(websocket: WebSocket, trip_id: int):
                     target_lat=IFET_DESTINATION_LAT,
                     target_lng=IFET_DESTINATION_LNG,
                     current_speed_kmh=latest.speed if latest.speed > 5 else 25.0,
-                    stop_count_remaining=remaining_stops
+                    stop_count_remaining=remaining_stops,
+                    trip_id=trip_id
                 )
                 init_payload = {
                     "type": "LOCATION_UPDATE",
@@ -196,7 +197,8 @@ async def live_location_websocket(websocket: WebSocket, trip_id: int):
                     target_lat=IFET_DESTINATION_LAT,
                     target_lng=IFET_DESTINATION_LNG,
                     current_speed_kmh=bus_speed if bus_speed > 5 else 25.0,
-                    stop_count_remaining=remaining_stops
+                    stop_count_remaining=remaining_stops,
+                    trip_id=trip_id
                 )
 
                 # ── 3. Broadcast enriched payload with is_active: True ──
